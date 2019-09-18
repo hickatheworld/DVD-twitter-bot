@@ -1,1 +1,12 @@
-{"coordinates":{"x":219,"y":252},"speed":{"x":5,"y":5},"cornerHits":0,"edgeHits":4}
+{
+    "coordinates": {
+        "x": 0,
+        "y": 0
+    },
+    "speed": {
+        "x": 0,
+        "y": 0
+    },
+    "cornerHits": 0,
+    "edgeHits": 0
+}
