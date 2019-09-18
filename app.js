@@ -2,14 +2,32 @@ const { createCanvas, loadImage } = require("canvas");
 const GIFEncoder = require("gifencoder");
 const colors = require("colors");
 const fs = require("fs");
+const twit = require("twit");
+const config = require("./config.js");
 
-const save = require("./save.json");
+const T = new twit(config);
 
 const GifDimensions = [800, 600];
 const LogoDimensions = [225, 129];
 
-var coordinates = [save.coordinates.x || random(0, GifDimensions[0] - LogoDimensions[0]), save.coordinates.y || random(0, GifDimensions[1] - LogoDimensions[1])];
-var speed = [save.speed.x || 5, save.speed.y || 5];
+try {
+    var save = JSON.parse(fs.readFileSync("./save.json"));
+    if (typeof save.coordinates.x == "undefined" || typeof save.coordinates.y == "undefined" || typeof save.speed.x == "undefined" || typeof save.speed.y == "undefined" || typeof save.cornerHits == "undefined" || typeof save.cornerHits == "undefined")
+        throw Error();
+} catch (e) {
+    var save = {
+        "coordinates": { x: random(0, GifDimensions[0] - LogoDimensions[0]), y: random(0, GifDimensions[1] - LogoDimensions[1]) },
+        "speed": { x: 5, y: 5 },
+        "cornerHits": 0,
+        "edgeHits": 0
+    }
+    console.log(colors.bgBlue.white("Created a new save."));
+} finally {
+    var coordinates = [save.coordinates.x, save.coordinates.y];
+    var speed = [save.speed.x, save.speed.y];
+    var edgeHits = save.edgeHits;
+}
+
 
 var edgeHits = save.edgeHits || 0;
 var cornerHits = save.cornerHits || 0;
@@ -22,7 +40,11 @@ var DVDLogo;
 loadImage("./img/dvdlogo.png").then(img => {
     DVDLogo = img;
 }).then(function () {
-    encodeGif(60);
+    console.log(colors.bgRed.red.white("Started interval"));
+    encodeGif(100);
+    setInterval(function () {
+        encodeGif(100);
+    }, 30 * 60000);
 });
 
 
@@ -68,6 +90,7 @@ function encodeGif(images) {
     encoder.finish();
     console.log(`Fully encoded new gif, took ${colors.bgYellow(Date.now() - firstTimestamp + "ms")}.`);
     saveData();
+    setTimeout(postGif, 1000);
 }
 
 
@@ -91,7 +114,7 @@ function saveData() {
             console.log(colors.bgRed.white(err));
             return;
         }
-        console.log(`\nSaved new data : Coos. : [${colors.blue(_save.coordinates.x)},${colors.blue(_save.coordinates.y)}]
+        console.log(`\n${colors.bgBlue.white("Saved new data")} : Coos. : [${colors.blue(_save.coordinates.x)},${colors.blue(_save.coordinates.y)}]
             \nSpeed : [${colors.blue(_save.speed.x)},${colors.blue(_save.speed.y)}]
             \nCorner hits : ${colors.blue(_save.cornerHits)} | Edge hits : ${colors.blue(_save.edgeHits)}
         `);
@@ -100,4 +123,26 @@ function saveData() {
 
 function random(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function postGif() {
+    var b64content = fs.readFileSync('./img/rendered.gif', { encoding: 'base64' });
+    T.post("media/upload", { media_data: b64content }, function (err, data, response) {
+        if (err) { console.log(error); }
+        var mediaIdstr = data.media_id_string;
+        var altText = "Bounce lol";
+        var meta_params = { media_id: mediaIdstr, alt_text: { text: altText } };
+        T.post("media/metadata/create", meta_params, function (err, data, response) {
+            if (err) console.log(err);
+            if (!err) {
+                var params = { status: `Edge hits : ${edgeHits}\nCorner hits : ${cornerHits}`, media_ids: [mediaIdstr] };
+
+                T.post("statuses/update", params, function (err, data, response) {
+                    console.log(colors.bgCyan.white("Tweet posted"));
+                });
+            }
+        });
+
+    });
+
 }
