@@ -128,7 +128,7 @@ function random(min, max) {
 function postGif() {
     var b64content = fs.readFileSync('./img/rendered.gif', { encoding: 'base64' });
     T.post("media/upload", { media_data: b64content }, function (err, data, response) {
-        if (err) { console.log(error); }
+        if (err) { console.log(err); }
         var mediaIdstr = data.media_id_string;
         var altText = "Bounce lol";
         var meta_params = { media_id: mediaIdstr, alt_text: { text: altText } };
