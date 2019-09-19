@@ -4,8 +4,8 @@
         "y": 0
     },
     "speed": {
-        "x": 0,
-        "y": 0
+        "x": 5,
+        "y": 5
     },
     "cornerHits": 0,
     "edgeHits": 0
